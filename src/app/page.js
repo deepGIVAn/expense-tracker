@@ -8,16 +8,13 @@ import {
   onSnapshot,
   QuerySnapshot,
   query,
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { db } from "./firebase";
 
 export default function Home() {
-  const [items, setItems] = useState([
-    { name: "Coffee", price: 4.95 },
-    { name: "Movie", price: 104.95 },
-    { name: "Tea", price: 14.95 },
-    { name: "Candy", price: 1.5 },
-  ]);
+  const [items, setItems] = useState([]);
 
   const [newItem, setnewItem] = useState({ name: "", price: "" });
 
@@ -37,35 +34,41 @@ export default function Home() {
   };
 
   // read item from database
-  const readData = async () => {
-    // const querySnapshot = await getDocs(collection(db, "expenses"));
-    // querySnapshot.forEach((doc) => {
-    //   console.log({ id: doc.id, ...doc.data() });
-    // });
-    const q = query(collection(db, "expenses"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      let itemsArray = [];
-      querySnapshot.forEach((doc) => {
-        itemsArray.push({ id: doc.id, ...doc.data() });
-      });
-      setItems(itemsArray);
-    });
-  };
 
   const setTotals = () => {
-    setTotal(
-      items.reduce((sum, item) => {
-        return sum + parseFloat(item.price);
-      }, 0)
+    const totalSum = items.reduce(
+      (sum, item) => sum + parseFloat(item.price),
+      0
     );
+    setTotal(totalSum);
   };
 
   useEffect(() => {
+    const readData = async () => {
+      // const querySnapshot = await getDocs(collection(db, "expenses"));
+      // querySnapshot.forEach((doc) => {
+      //   console.log({ id: doc.id, ...doc.data() });
+      // });
+      const q = query(collection(db, "expenses"));
+      const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        let itemsArray = [];
+        querySnapshot.forEach((doc) => {
+          itemsArray.push({ id: doc.id, ...doc.data() });
+        });
+        setItems(itemsArray);
+      });
+    };
     readData();
-    setTotals();
   }, []);
 
+  useEffect(() => {
+    setTotals();
+  }, [items]);
+
   // delete item from database
+  const deleteItem = async (id) => {
+    await deleteDoc(doc(db, "expenses", id));
+  };
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between sm:p-24 p-4">
@@ -109,7 +112,10 @@ export default function Home() {
                   <span className="capitalize ">{item.name}</span>
                   <span>$ {item.price}</span>
                 </div>
-                <button className="ml-8 p-4 border-l-2 border-slate-900 hover:bg-slate-900 w-16">
+                <button
+                  onClick={() => deleteItem(item.id)}
+                  className="ml-8 p-4 border-l-2 border-slate-900 hover:bg-slate-900 w-16"
+                >
                   X
                 </button>
               </li>
